@@ -1,0 +1,11 @@
+// La configurazione viene specificata con una serie di linee "KEY:VALUE"
+// dove "KEY" indica una sequenza di lettere (A-z)
+// Le linee che iniziano con "//" vengono ignorate, come anche le linee formate
+// solo da spazi
+
+
+host:127.0.0.1
+database:organizzazione_concerti
+
+username:concerti_user
+password:0d64c23210ce36271d27b074bbcb0f6b7b927c3769adeefedf7e3b9040d7cde63c566d01cbe2f9f9348f4fb7a7c1b8205424813fd7a931aa822c6c4b71736389

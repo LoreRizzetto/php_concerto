@@ -1,4 +1,7 @@
-# Usage
+# README for v2.1
+
+
+# Usage 
 1. Setup the database.
     - Either run the polyglot as bash which creates a low privlege user:
         - `$ bash setup.sql | mysql` 

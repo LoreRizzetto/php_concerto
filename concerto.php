@@ -1,121 +1,114 @@
-<?php 
-class ConcertoFactory {
-    public static string $concerto_template; 
+<?php
 
-    public static function bind(string $name, PDO $pdo): void {
-        $getpdo = function () use ($pdo) { return $pdo; };
-        eval(str_replace("{{NAME}}", $name, self::$concerto_template));
-    }
-}
+class Concerto {
+    private static PDO $pdo;
 
-ConcertoFactory::$concerto_template = file_get_contents("concerto.template.php");
+    private int $id;
+    private string $codice;
+    private string $titolo;
+    private string $descrizione;
+    private $data;
 
-enum FilterType {
-// $value is the literal / column name
-case Column;
-case Literal;
 
-// the value is [opeartor, *args]
-case BinaryOp; 
-case UniaryOp;
-}
-
-class Filter {
-    public static array $binary_operators = [
-        // comparison operators
-        "eq" => "=", // NULL aware eq, 1 if both NULL, 0 if only one
-        "gte" => ">=",
-        "gt" => ">",
-        "lte" => "<=",
-        "lt" => "<",
-        "neq" => "!=",
-
-        // pattern operators
-        "like" => "LIKE",
-        "regexp" => "REGEXP",
-
-        // boolean operators
-        "or" => "OR",
-        "xor" => "XOR",
-        "and" => "AND",
-
-        // ...
-        "soundslike" => "SOUNDS LIKE",
-    ]; 
-
-    public static array $unary_operators = [
-        "not" => "NOT"
-    ];
-
-    public FilterType $type;
-    public mixed $value;
-
-    public static function __callStatic (string $name, array $arguments): Filter {
-        return new Filter(FilterType::Column, $name);
+    function getId(){
+        return $this->$id;
     }
 
-    public function __construct(FilterType $type, mixed $value) {
-        $this->type = $type;
-        $this->value = $value;
+    function getCodice(){
+        return $this->$codice;
+    }
+    function setCodice($codice){
+        $this->codice=$codice;
     }
 
-    public function __call(string $name, array $arguments): Filter {
-        if (isset(self::$binary_operators[$name])) {
-            if (count($arguments) != 1) {
-                throw new Error("Incorrect number of arguments passed to binary operator $name");
-            }
-            return new Filter(
-                FilterType::BinaryOp, 
-                [
-                    $name, 
-                    $this, 
-                    $arguments[0] instanceof Filter ?
-                    $arguments[0] : 
-                    new Filter(FilterType::Literal, $arguments[0])
-                ]
-            );
-        } else if (isset(self::$unary_operators[$name])) {
-            if (count($arguments) != 0) {
-                    throw new Error("Incorrect number of arguments passed to binary operator $name");
-            }
-            return new Filter(FilterType::UnaryOp, [$name, $this]);
-        } else {
-            throw new Error("Unrecognized action");
+    function getTitolo(){
+        return $this->$titolo;
+    }
+    function setTitolo($titolo){
+        $this->titolo=$titolo;
+    }
+
+    function getDescrizione(){
+        return $this->$descrizione;
+    }
+    function setDescrizione($descrizione){
+        $this->descrizione=$descrizione;
+    }
+
+    function getData(){
+        return $this->$data;
+    }
+    public function setData($data){
+        if (is_string($data)) {
+            $data = new DateTime($data);
         }
+        $this->data=$data;
     }
-    
-    public function render(string $depth="") {
-        if ($this->type === FilterType::Column) {
-            $query = $this->value;
-            $params = []; 
-        } else if ($this->type === FilterType::Literal) {
-            $query = ":ltr$depth";
-            $params = ["ltr$depth" => $this->value];
 
-        } else if ($this->type === FilterType::BinaryOp) {
-            list($query1, $params1) = $this->value[1]->render($depth . "bl");
-            list($query2, $params2) = $this->value[2]->render($depth . "br");
-            $query = $query1 . self::$binary_operators[$this->value[0]] . $query2;
-            $params = array_merge($params1, $params2);
+    public static function Create($dati) {
+        $query = self::getPdo()->prepare(
+            "INSERT INTO concerti(codice, titolo, descrizione, data) VALUES (:codice, :titolo, :descrizione, :data)"
+        )->execute([
+            "codice" => $dati["codice"],
+            "titolo" => $dati["titolo"],
+            "descrizione" => $dati["descrizione"],
+            "data" => $dati["data"]
+        ]);
 
-        } else if ($this->type === FilterType::UnaryOp) {
-            list($query, $params) = $this->value[1]->render($depth . "u");
-            $query =  self::$unary_operators[$this->value[0]] . $query;
+        $query = self::getPdo()->prepare(
+            "SELECT * FROM concerti WHERE id=:id"
+        );
+        $query->execute(["id" => self::getPdo()->lastInsertId()]);
 
-        } else {
-            throw new Error("Type not supported");
+        $obj = $query->fetchObject(__CLASS__);
+        // usare php logora la mia sanità mentale
+        $obj->data = new Datetime($obj->data);
+        return $obj;
+    }
+
+    public static function Find($id) {
+        $query = self::getPdo()->prepare(
+            "SELECT * FROM concerti WHERE id=:id"
+        );
+        $query->execute(["id" => $id]);
+        return $query->fetchObject(__CLASS__);
+    }
+
+    public static function FindAll() {
+        $query = self::getPdo()->prepare(
+            "SELECT * FROM concerti"
+        );
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_CLASS, __CLASS__);
+    }
+
+    public function Delete() {
+        $stmt = self::getPdo()->prepare("DELETE FROM concerti WHERE id = :id");
+        $stmt->bindParam(':id', $this->id);
+        $stmt->execute();
+    }
+
+    public function Update($params = []) {
+        foreach ($params as $key => $value) {
+            $this->{$key} = $value;
         }
 
-        return ["(" . $query . ")", $params];
+        self::getPdo()->prepare(
+            "UPDATE concerti SET codice = :codice, titolo = :titolo, descrizione = :descrizione, data = :data WHERE id = :id"
+        )->execute([
+            "id" => $this->id,
+            "codice" => $this->codice,
+            "titolo" => $this->titolo,
+            "descrizione" => $this->descrizione,
+            "data" => $this->data->format("Y-m-d H:i:s")
+        ]);
     }
 
-    public function __toString(): string {
-        return "Filter(" . $this->type->name . ", " 
-            . (
-                is_array($this->value) ? 
-                ("[" . implode(",", $this->value) . "]") :
-                $this->value
-            ) . ")";
+    public static function getPdo() {
+        return self::$pdo;
+    }
+
+    public static function setPdo($pdo) {
+        self::$pdo = $pdo;
     }
 }
-
