@@ -1,4 +1,6 @@
 <?php
+include 'sala.php';
+include 'pezzo.php';
 
 class Concerto {
     private static PDO $pdo;
@@ -103,6 +105,30 @@ class Concerto {
             "data" => $this->data->format("Y-m-d H:i:s")
         ]);
     }
+
+    public function Sala(): Sala {
+        $query = self::getPdo()->prepare(
+            "SELECT * FROM sale WHERE concerto_id=:id"
+        );
+        $query->execute([
+            "id" => $this->id,
+        ]);
+        return $query->fetchObject("Sala");
+    }
+
+    public function Pezzi(): array {
+        $query = self::getPdo()->prepare(
+            "SELECT pezzi.id, pezzi.codice, pezzi.titolo " .
+            "FROM concerti_pezzi " .
+            "CROSS JOIN pezzi " .
+            "ON pezzi.id=concerti_pezzi.pezzo_id " .
+            "WHERE concerti_pezzi.concerto_id=:id"
+        );
+        $query->execute([
+            "id" => $this->id,
+        ]);
+        return $query->fetchAll(PDO::FETCH_CLASS, "Pezzo");
+    } 
 
     public static function getPdo() {
         return self::$pdo;
