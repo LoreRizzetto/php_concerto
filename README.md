@@ -17,18 +17,10 @@ class DbConf{
 }
 ```
 
-2. Run it (it might fail if doas isn't installed, in that case comment out `system(...)`):
+2. Run it:
 ```
 $ php example.php
-doas (user@host) password:
-id      codice  titolo  descrizione     data
-1       cod1    titolo1 descrizione1    1970-01-01 01:01:01
-2       cod2    titolo2 descrizione2    1970-02-02 02:02:02
-=============
-id      codice  titolo  descrizione     data
-1       cod1    titolo1 descrizione1    1970-01-01 01:01:01
-2       cod2    titolo2 descrizione2    1970-02-02 02:02:02
-=============
+Concerto('cod1', 'titolo1', 'descrizione1', '1970-01-01 01:01:01', 1)
 ```
 
 # Usage of Concerto.php
@@ -40,3 +32,23 @@ ConcertoFactory::bind("MyConcertoClass", $pdo);
 
 MyConcertoClass::create(...); // no need to pass $pdo again
 ```
+
+# TODO 
+- [x] \_\_toString(): string
+- [ ] Improve operations 
+    - Select
+        - [ ] Cross table
+    - Insert
+        - [ ] Static INSERT FROM
+    - Update 
+        - [ ] Static UPDATE
+        - [ ] Atomic UPDATEs
+    - [ ] Replace?
+    - Filters
+        - [x] Select
+        - [ ] Delete?
+        - [ ] Update?
+
+- [ ] Add support for bulk operations
+    - [ ] Transactions
+    - [ ] \*\_many()

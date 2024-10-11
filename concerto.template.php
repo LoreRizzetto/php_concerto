@@ -1,64 +1,71 @@
 //<?php
 
 class {{NAME}} {
-    public static $pdo;
+    public static PDO $pdo;
 
-    private $id;
-    private $codice;
-    private $titolo;
-    private $descrizione;
-    private $data;
+    private int $id;
+    private string $codice;
+    private string $titolo;
+    private string $descrizione;
+    private string $data;
 
-    private $local;
-    private $dirty;
+    private bool $local;
+    private bool $dirty;
 
-    public function getId() {
+    public function getId(): int {
         return $this->id;
     }
 
-    public function getCodice() {
+    public function getCodice(): string {
         return $this->codice;
     }
-    public function setCodice($codice) {
+    public function setCodice(string $codice): void {
         $this->dirty = true;
         $this->codice = $codice;
     }
 
-    public function getTitolo($titolo){
+    public function getTitolo(): string {
         return $this->titolo;
     }
-    public function setTitolo($titolo){
+    public function setTitolo(string $titolo): void {
         $this->dirty = true;
         $this->titolo=$titolo;
     }
 
-    public function getDescrizione($descrizione){
+    public function getDescrizione(): string {
         return $this->descrizione;
     }
-    public function setDescrizione($descrizione){
+    public function setDescrizione(string $descrizione): void {
         $this->dirty = true;
         $this->descrizione=$descrizione;
     }
 
-    public function getData($data){
+    public function getData(): string {
         return $this->data;
     }
-    public function setData($data){
+    public function setData(string $data): void {
         $this->dirty = true;
         $this->data=$data;
     }
 
-    public function __construct($codice, $titolo, $descrizione, $data) {
-        $this->local = true;
-        $this->dirty = true;
+    public function __construct(string $codice, string $titolo, string $descrizione, string $data, int $id = null) {
+        $this->local = $id === null;
+        $this->dirty = $id === null;
 
+        if ($id !== null) {
+            $this->id = $id;
+        }
         $this->codice = $codice;
         $this->titolo = $titolo;
         $this->descrizione = $descrizione;
         $this->data = $data;
     }
 
-    public function delete() {
+    public function __toString(): string {
+        return "Concerto('$this->codice', '$this->titolo', '$this->descrizione', '$this->data', $this->id)";
+    }
+
+    public function delete(): void {
         if ($this->local) {
             throw new Error("Cannot delete local-only instance");
         }
@@ -70,7 +77,7 @@ class {{NAME}} {
         $this->local = true;
     }
 
-    public function update($data = null) {
+    public function update(array $data = null): void {
         if ($data === null) {
             $data=[];
         }
@@ -102,22 +109,31 @@ class {{NAME}} {
         $this->dirty = false;
     }
 
-    //public function show() {
-    //    $stmt = self::$pdo->prepare("SELECT * FROM concerti WHERE id = :id");
-    //    $stmt->bindParam (':id', $this->id);
-    //    $stmt->execute();
-    //    return $stmt->fetch(PDO::FETCH_ASSOC);
-    //}
-
-    public static function create($data) {
+    public static function create(array $data) {
         $inst = new self($data['codice'], $data['titolo'], $data['descrizione'], $data['data']);
         $inst->update();
         return $inst;
     }
 
-    //public static function find() {
-    //    throw new Exception("Not Implemented.");
-    //}
+    public static function select(Filter $filter = null, int $limit = 1000000) {
+        if ($filter === null) {
+            $stmt = self::$pdo->prepare("SELECT * FROM concerti LIMIT " . 0+$limit);
+        } else {
+            list($where_cond, $parameters) = $filter->render();
+            $stmt = self::$pdo->prepare("SELECT * FROM concerti WHERE $where_cond LIMIT " . 0+$limit);
+            foreach ($parameters as $key => $value) {
+                $stmt->bindParam($key, $value);
+            }
+        }
+
+        $stmt->execute();
+        return array_map(
+            function ($record) {
+                return new {{NAME}}($record["codice"], $record["titolo"], $record["descrizione"], $record["data"], id: $record["id"]);
+            },
+            $stmt->fetchAll()
+        );
+    }
 }
 
 {{NAME}}::$pdo = $getpdo();
