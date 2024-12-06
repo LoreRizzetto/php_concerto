@@ -1,0 +1,5 @@
+DROP DATABASE IF EXISTS test;
+
+CREATE DATABASE test; 
+
+CREATE TABLE test.concerti (id INT AUTO_INCREMENT PRIMARY KEY, codice TEXT, titolo TEXT, descrizione TEXT, data DATETIME);
